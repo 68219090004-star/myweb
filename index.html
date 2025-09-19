@@ -386,7 +386,8 @@
             projectId: "fbpofkbpof",
             storageBucket: "fbpofkbpof.firebasestorage.app",
             messagingSenderId: "565215186792",
-            appId: "1:565215186792:web:1646ab0757a6026ff990dd"
+            appId: "1:565215186792:web:1646ab0757a6026ff990dd",
+            measurementId: "G-41TZ8YDF52"
         };
 
         // Initialize Firebase
@@ -446,25 +447,30 @@
             }
 
             try {
-                // Load students
+                // Load students - using document structure
                 const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
                 const studentsSnapshot = await window.firebaseGet(studentsRef);
                 if (studentsSnapshot.exists()) {
                     const studentsData = studentsSnapshot.val();
-                    students = Object.keys(studentsData).map(key => ({
-                        ...studentsData[key],
-                        firebaseKey: key
+                    students = Object.keys(studentsData).map(docId => ({
+                        id: studentsData[docId].id || docId,
+                        name: studentsData[docId].name || '',
+                        present: studentsData[docId].present || 0,
+                        leave: studentsData[docId].leave || 0,
+                        absent: studentsData[docId].absent || 0,
+                        firebaseKey: docId
                     }));
                 }
 
-                // Load subjects
+                // Load subjects - using document structure
                 const subjectsRef = window.firebaseRef(window.firebaseDB, 'subjects');
                 const subjectsSnapshot = await window.firebaseGet(subjectsRef);
                 if (subjectsSnapshot.exists()) {
                     const subjectsData = subjectsSnapshot.val();
-                    subjects = Object.keys(subjectsData).map(key => ({
-                        ...subjectsData[key],
-                        firebaseKey: key
+                    subjects = Object.keys(subjectsData).map(docId => ({
+                        id: subjectsData[docId].id || docId,
+                        name: subjectsData[docId].name || '',
+                        firebaseKey: docId
                     }));
                 }
 
@@ -514,12 +520,13 @@
             }
 
             try {
-                // Save students
+                // Save students - using document ID structure
                 const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
                 const studentsData = {};
                 students.forEach(student => {
-                    const key = student.firebaseKey || student.id;
-                    studentsData[key] = {
+                    // Use student ID as document ID, or existing firebaseKey
+                    const docId = student.firebaseKey || student.id;
+                    studentsData[docId] = {
                         id: student.id,
                         name: student.name,
                         present: student.present || 0,
@@ -529,12 +536,13 @@
                 });
                 await window.firebaseSet(studentsRef, studentsData);
 
-                // Save subjects
+                // Save subjects - using document ID structure
                 const subjectsRef = window.firebaseRef(window.firebaseDB, 'subjects');
                 const subjectsData = {};
                 subjects.forEach(subject => {
-                    const key = subject.firebaseKey || subject.id;
-                    subjectsData[key] = {
+                    // Use subject ID as document ID, or existing firebaseKey
+                    const docId = subject.firebaseKey || subject.id;
+                    subjectsData[docId] = {
                         id: subject.id,
                         name: subject.name
                     };
@@ -790,7 +798,7 @@
                 const studentsSnapshot = await window.firebaseGet(studentsRef);
                 
                 if (!studentsSnapshot.exists()) {
-                    // Add default students to Firebase
+                    // Add default students to Firebase with document ID structure
                     const defaultStudents = {
                         '001': { id: '001', name: 'สมชาย ใจดี', present: 0, leave: 0, absent: 0 },
                         '002': { id: '002', name: 'สมหญิง รักเรียน', present: 0, leave: 0, absent: 0 },
@@ -799,7 +807,7 @@
                         '005': { id: '005', name: 'ธนา สุขใส', present: 0, leave: 0, absent: 0 }
                     };
                     await window.firebaseSet(studentsRef, defaultStudents);
-                    console.log('Default students added to Firebase');
+                    console.log('Default students added to Firebase with document structure');
                 }
 
                 // Check if subjects exist
@@ -807,7 +815,7 @@
                 const subjectsSnapshot = await window.firebaseGet(subjectsRef);
                 
                 if (!subjectsSnapshot.exists()) {
-                    // Add default subjects to Firebase
+                    // Add default subjects to Firebase with document ID structure
                     const defaultSubjects = {
                         'math': { id: 'math', name: 'คณิตศาสตร์' },
                         'thai': { id: 'thai', name: 'ภาษาไทย' },
@@ -816,7 +824,7 @@
                         'social': { id: 'social', name: 'สังคมศึกษา' }
                     };
                     await window.firebaseSet(subjectsRef, defaultSubjects);
-                    console.log('Default subjects added to Firebase');
+                    console.log('Default subjects added to Firebase with document structure');
                 }
 
                 // Reload data after initialization
@@ -1154,5 +1162,5 @@
         
         initialize();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981c0d10764926e6',t:'MTc1ODMxNjAyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981c1cb2d3057b52',t:'MTc1ODMxNjY3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
