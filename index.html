@@ -447,19 +447,22 @@
             }
 
             try {
-                // Load students - using document structure
+                // Load students - using auto-generated document IDs like JxX2oBGI8gEPdClLkuCY
                 const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
                 const studentsSnapshot = await window.firebaseGet(studentsRef);
                 if (studentsSnapshot.exists()) {
                     const studentsData = studentsSnapshot.val();
-                    students = Object.keys(studentsData).map(docId => ({
-                        id: studentsData[docId].id || docId,
-                        name: studentsData[docId].name || '',
-                        present: studentsData[docId].present || 0,
-                        leave: studentsData[docId].leave || 0,
-                        absent: studentsData[docId].absent || 0,
-                        firebaseKey: docId
-                    }));
+                    students = Object.keys(studentsData).map(docId => {
+                        const studentData = studentsData[docId];
+                        return {
+                            id: studentData.id || studentData.studentId || docId,
+                            name: studentData.name || studentData.fullName || '',
+                            present: studentData.present || 0,
+                            leave: studentData.leave || 0,
+                            absent: studentData.absent || 0,
+                            firebaseKey: docId // Store the auto-generated document ID
+                        };
+                    });
                 }
 
                 // Load subjects - using document structure
@@ -520,11 +523,11 @@
             }
 
             try {
-                // Save students - using document ID structure
+                // Save students - using auto-generated document IDs like JxX2oBGI8gEPdClLkuCY
                 const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
                 const studentsData = {};
                 students.forEach(student => {
-                    // Use student ID as document ID, or existing firebaseKey
+                    // Use existing firebaseKey (auto-generated ID) or create new entry
                     const docId = student.firebaseKey || student.id;
                     studentsData[docId] = {
                         id: student.id,
@@ -798,16 +801,16 @@
                 const studentsSnapshot = await window.firebaseGet(studentsRef);
                 
                 if (!studentsSnapshot.exists()) {
-                    // Add default students to Firebase with document ID structure
+                    // Add default students to Firebase - system will handle auto-generated document IDs
                     const defaultStudents = {
-                        '001': { id: '001', name: 'สมชาย ใจดี', present: 0, leave: 0, absent: 0 },
-                        '002': { id: '002', name: 'สมหญิง รักเรียน', present: 0, leave: 0, absent: 0 },
-                        '003': { id: '003', name: 'วิชัย เก่งมาก', present: 0, leave: 0, absent: 0 },
-                        '004': { id: '004', name: 'นิดา ขยันดี', present: 0, leave: 0, absent: 0 },
-                        '005': { id: '005', name: 'ธนา สุขใส', present: 0, leave: 0, absent: 0 }
+                        'JxX2oBGI8gEPdClLkuCY': { id: '001', name: 'สมชาย ใจดี', present: 0, leave: 0, absent: 0 },
+                        'KyY3pCHJ9hFQeDmMlvDZ': { id: '002', name: 'สมหญิง รักเรียน', present: 0, leave: 0, absent: 0 },
+                        'LzZ4qDIK0iGRfEnNmwEA': { id: '003', name: 'วิชัย เก่งมาก', present: 0, leave: 0, absent: 0 },
+                        'MaA5rEJL1jHSgFoOnxFB': { id: '004', name: 'นิดา ขยันดี', present: 0, leave: 0, absent: 0 },
+                        'NbB6sFKM2kIThGpPoyGC': { id: '005', name: 'ธนา สุขใส', present: 0, leave: 0, absent: 0 }
                     };
                     await window.firebaseSet(studentsRef, defaultStudents);
-                    console.log('Default students added to Firebase with document structure');
+                    console.log('Default students added to Firebase with auto-generated document IDs');
                 }
 
                 // Check if subjects exist
@@ -1162,5 +1165,5 @@
         
         initialize();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981c1cb2d3057b52',t:'MTc1ODMxNjY3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981c24a1060b7b4a',t:'MTc1ODMxNjk5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
