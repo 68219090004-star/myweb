@@ -372,9 +372,46 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, push, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuXlpSelhjTmOC9eCyjP-L_iJ7laOdLJ8",
+            authDomain: "fbpofkbpof.firebaseapp.com",
+            databaseURL: "https://fbpofkbpof-default-rtdb.firebaseio.com/",
+            projectId: "fbpofkbpof",
+            storageBucket: "fbpofkbpof.firebasestorage.app",
+            messagingSenderId: "565215186792",
+            appId: "1:565215186792:web:1646ab0757a6026ff990dd"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase functions available globally
+        window.firebaseDB = database;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebasePush = push;
+        window.firebaseOnValue = onValue;
+        window.firebaseRemove = remove;
+    </script>
+
     <script>
-        // Sample student data - start empty
-        let students = [];
+        // Sample student data - with initial students
+        let students = [
+            { id: '001', name: 'สมชาย ใจดี', present: 0, leave: 0, absent: 0 },
+            { id: '002', name: 'สมหญิง รักเรียน', present: 0, leave: 0, absent: 0 },
+            { id: '003', name: 'วิชัย เก่งมาก', present: 0, leave: 0, absent: 0 },
+            { id: '004', name: 'นิดา ขยันดี', present: 0, leave: 0, absent: 0 },
+            { id: '005', name: 'ธนา สุขใส', present: 0, leave: 0, absent: 0 }
+        ];
 
         // Sample subjects
         let subjects = [
@@ -392,9 +429,67 @@
         let currentStudentId = null;
         let isTeacher = false;
         let selectedSubject = null;
+        let isFirebaseConnected = false;
 
-        // Load data from localStorage
-        function loadData() {
+        // Check if Firebase is properly configured
+        function checkFirebaseConfig() {
+            // Firebase is now properly configured with real values
+            return true;
+        }
+
+        // Load data from Firebase
+        async function loadDataFromFirebase() {
+            if (!window.firebaseDB || !checkFirebaseConfig()) {
+                console.log('Firebase not configured, using localStorage');
+                loadDataFromLocalStorage();
+                return;
+            }
+
+            try {
+                // Load students
+                const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
+                const studentsSnapshot = await window.firebaseGet(studentsRef);
+                if (studentsSnapshot.exists()) {
+                    const studentsData = studentsSnapshot.val();
+                    students = Object.keys(studentsData).map(key => ({
+                        ...studentsData[key],
+                        firebaseKey: key
+                    }));
+                }
+
+                // Load subjects
+                const subjectsRef = window.firebaseRef(window.firebaseDB, 'subjects');
+                const subjectsSnapshot = await window.firebaseGet(subjectsRef);
+                if (subjectsSnapshot.exists()) {
+                    const subjectsData = subjectsSnapshot.val();
+                    subjects = Object.keys(subjectsData).map(key => ({
+                        ...subjectsData[key],
+                        firebaseKey: key
+                    }));
+                }
+
+                // Load attendance records
+                const recordsRef = window.firebaseRef(window.firebaseDB, 'attendanceRecords');
+                const recordsSnapshot = await window.firebaseGet(recordsRef);
+                if (recordsSnapshot.exists()) {
+                    attendanceRecords = recordsSnapshot.val();
+                }
+
+                isFirebaseConnected = true;
+                console.log('Data loaded from Firebase successfully');
+                
+                // Show Firebase status
+                showFirebaseStatus(true);
+                
+            } catch (error) {
+                console.error('Error loading from Firebase:', error);
+                loadDataFromLocalStorage();
+                showFirebaseStatus(false);
+            }
+        }
+
+        // Load data from localStorage (fallback)
+        function loadDataFromLocalStorage() {
             const savedStudents = localStorage.getItem('attendanceData');
             if (savedStudents) {
                 students = JSON.parse(savedStudents);
@@ -411,11 +506,107 @@
             }
         }
 
-        // Save data to localStorage
-        function saveData() {
+        // Save data to Firebase
+        async function saveDataToFirebase() {
+            if (!window.firebaseDB || !isFirebaseConnected) {
+                saveDataToLocalStorage();
+                return;
+            }
+
+            try {
+                // Save students
+                const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
+                const studentsData = {};
+                students.forEach(student => {
+                    const key = student.firebaseKey || student.id;
+                    studentsData[key] = {
+                        id: student.id,
+                        name: student.name,
+                        present: student.present || 0,
+                        leave: student.leave || 0,
+                        absent: student.absent || 0
+                    };
+                });
+                await window.firebaseSet(studentsRef, studentsData);
+
+                // Save subjects
+                const subjectsRef = window.firebaseRef(window.firebaseDB, 'subjects');
+                const subjectsData = {};
+                subjects.forEach(subject => {
+                    const key = subject.firebaseKey || subject.id;
+                    subjectsData[key] = {
+                        id: subject.id,
+                        name: subject.name
+                    };
+                });
+                await window.firebaseSet(subjectsRef, subjectsData);
+
+                // Save attendance records
+                const recordsRef = window.firebaseRef(window.firebaseDB, 'attendanceRecords');
+                await window.firebaseSet(recordsRef, attendanceRecords);
+
+                console.log('Data saved to Firebase successfully');
+                
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                saveDataToLocalStorage();
+            }
+        }
+
+        // Save data to localStorage (fallback)
+        function saveDataToLocalStorage() {
             localStorage.setItem('attendanceData', JSON.stringify(students));
             localStorage.setItem('subjectsData', JSON.stringify(subjects));
             localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
+        }
+
+        // Show Firebase connection status
+        function showFirebaseStatus(connected) {
+            // Remove existing status if any
+            const existingStatus = document.getElementById('firebaseStatus');
+            if (existingStatus) {
+                existingStatus.remove();
+            }
+
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'firebaseStatus';
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                font-weight: bold;
+                z-index: 1001;
+                ${connected ? 
+                    'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' : 
+                    'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;'
+                }
+            `;
+            
+            statusDiv.innerHTML = connected ? 
+                '🟢 เชื่อมต่อ Firebase สำเร็จ' : 
+                '🔴 ใช้ข้อมูลแบบออฟไลน์';
+            
+            document.body.appendChild(statusDiv);
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                if (statusDiv) {
+                    statusDiv.style.opacity = '0.7';
+                }
+            }, 3000);
+        }
+
+        // Load data (try Firebase first, fallback to localStorage)
+        async function loadData() {
+            await loadDataFromFirebase();
+        }
+
+        // Save data (try Firebase first, fallback to localStorage)
+        async function saveData() {
+            await saveDataToFirebase();
         }
 
         // Get today's date in YYYY-MM-DD format
@@ -589,8 +780,55 @@
             }
         }
 
+        // Initialize default data to Firebase
+        async function initializeDefaultData() {
+            if (!isFirebaseConnected) return;
+
+            try {
+                // Check if data already exists
+                const studentsRef = window.firebaseRef(window.firebaseDB, 'students');
+                const studentsSnapshot = await window.firebaseGet(studentsRef);
+                
+                if (!studentsSnapshot.exists()) {
+                    // Add default students to Firebase
+                    const defaultStudents = {
+                        '001': { id: '001', name: 'สมชาย ใจดี', present: 0, leave: 0, absent: 0 },
+                        '002': { id: '002', name: 'สมหญิง รักเรียน', present: 0, leave: 0, absent: 0 },
+                        '003': { id: '003', name: 'วิชัย เก่งมาก', present: 0, leave: 0, absent: 0 },
+                        '004': { id: '004', name: 'นิดา ขยันดี', present: 0, leave: 0, absent: 0 },
+                        '005': { id: '005', name: 'ธนา สุขใส', present: 0, leave: 0, absent: 0 }
+                    };
+                    await window.firebaseSet(studentsRef, defaultStudents);
+                    console.log('Default students added to Firebase');
+                }
+
+                // Check if subjects exist
+                const subjectsRef = window.firebaseRef(window.firebaseDB, 'subjects');
+                const subjectsSnapshot = await window.firebaseGet(subjectsRef);
+                
+                if (!subjectsSnapshot.exists()) {
+                    // Add default subjects to Firebase
+                    const defaultSubjects = {
+                        'math': { id: 'math', name: 'คณิตศาสตร์' },
+                        'thai': { id: 'thai', name: 'ภาษาไทย' },
+                        'english': { id: 'english', name: 'ภาษาอังกฤษ' },
+                        'science': { id: 'science', name: 'วิทยาศาสตร์' },
+                        'social': { id: 'social', name: 'สังคมศึกษา' }
+                    };
+                    await window.firebaseSet(subjectsRef, defaultSubjects);
+                    console.log('Default subjects added to Firebase');
+                }
+
+                // Reload data after initialization
+                await loadDataFromFirebase();
+                
+            } catch (error) {
+                console.error('Error initializing default data:', error);
+            }
+        }
+
         // Add new student
-        function addNewStudent() {
+        async function addNewStudent() {
             if (!isTeacher) {
                 alert('คุณไม่มีสิทธิ์เพิ่มนักเรียน');
                 return;
@@ -619,7 +857,7 @@
                 absent: 0
             });
 
-            saveData();
+            await saveData();
             
             // Clear inputs and hide add section
             document.getElementById('newStudentId').value = '';
@@ -637,7 +875,7 @@
         }
 
         // Delete student
-        function deleteStudent(studentId) {
+        async function deleteStudent(studentId) {
             if (!isTeacher) {
                 alert('คุณไม่มีสิทธิ์ลบนักเรียน');
                 return;
@@ -656,7 +894,7 @@
                     }
                 });
                 
-                saveData();
+                await saveData();
                 
                 // Re-render current attendance if showing
                 const selectedDate = document.getElementById('attendanceDate').value;
@@ -845,7 +1083,7 @@
         }
 
         // Mark attendance
-        function markAttendance(studentId, type, date, subjectId) {
+        async function markAttendance(studentId, type, date, subjectId) {
             if (!isTeacher) {
                 alert('คุณไม่มีสิทธิ์แก้ไขข้อมูล');
                 return;
@@ -869,7 +1107,7 @@
             
             const student = students.find(s => s.id === studentId);
             if (student) {
-                saveData();
+                await saveData();
                 renderStudentsList(date, subjectId);
                 
                 // Check if student failed in this subject
@@ -907,7 +1145,14 @@
         }
 
         // Initialize
-        loadData();
+        async function initialize() {
+            await loadData();
+            if (isFirebaseConnected) {
+                await initializeDefaultData();
+            }
+        }
+        
+        initialize();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981bdc7831737b46',t:'MTc1ODMxNDA0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981c0d10764926e6',t:'MTc1ODMxNjAyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
